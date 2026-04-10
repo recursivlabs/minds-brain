@@ -1,7 +1,7 @@
 import { Recursiv } from '@recursiv/sdk';
 import { PROJECT_ID } from './recursiv';
 
-const DB_NAME = 'minds_brain';
+const DB_NAME = 'default';
 let _ensured = false;
 
 export async function ensureDb(sdk: Recursiv) {
