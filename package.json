@@ -1,0 +1,37 @@
+{
+  "name": "minds-brain",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "serve dist -l 3000 -s",
+    "build": "expo export --platform web",
+    "dev": "expo start",
+    "web": "expo start --web",
+    "ios": "expo start --ios",
+    "android": "expo start --android"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~4.0.0",
+    "@expo/vector-icons": "^14.0.0",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@recursiv/sdk": "^0.3.0",
+    "expo": "~52.0.0",
+    "expo-constants": "~17.0.8",
+    "expo-font": "~13.0.0",
+    "expo-router": "~4.0.0",
+    "expo-splash-screen": "~0.29.24",
+    "expo-status-bar": "~2.0.0",
+    "geist": "^1.7.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.0",
+    "react-native-safe-area-context": "4.14.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-web": "~0.19.13",
+    "serve": "^14.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "~18.3.0",
+    "typescript": "~5.3.0"
+  }
+}
