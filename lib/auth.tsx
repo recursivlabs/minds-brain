@@ -10,7 +10,7 @@ const KEYS = {
   version: 'brain:auth_version',
 };
 
-const AUTH_VERSION = '1';
+const AUTH_VERSION = '2'; // bumped: OTP auth
 
 const API_KEY_SCOPES = [
   'posts:read', 'posts:write',
@@ -39,7 +39,8 @@ interface AuthContextValue {
   orgId: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  sendOtp: (email: string) => Promise<void>;
+  verifyOtp: (email: string, otp: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -108,9 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setOrgId(ORG_ID);
   }
 
-  const signIn = React.useCallback(async (email: string, password: string) => {
-    const result = await anonSdk.auth.signInAndCreateKey(
-      { email, password },
+  const sendOtp = React.useCallback(async (email: string) => {
+    await anonSdk.auth.sendOtp({ email });
+  }, []);
+
+  const verifyOtp = React.useCallback(async (email: string, otp: string) => {
+    const result = await anonSdk.auth.verifyOtpAndCreateKey(
+      { email, otp },
       { name: 'brain-' + Date.now(), scopes: [...API_KEY_SCOPES], organizationId: ORG_ID },
     );
 
@@ -118,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: result.user?.id || '',
       name: result.user?.name || '',
       email: result.user?.email || email,
-      username: result.user?.username || email.split('@')[0],
+      username: (result.user as any)?.username || email.split('@')[0],
       image: result.user?.image ?? null,
     });
   }, []);
@@ -137,10 +142,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       orgId,
       isLoading,
       isAuthenticated: !!user,
-      signIn,
+      sendOtp,
+      verifyOtp,
       signOut,
     }),
-    [user, authedSdk, orgId, isLoading, signIn, signOut],
+    [user, authedSdk, orgId, isLoading, sendOtp, verifyOtp, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
