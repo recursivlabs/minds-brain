@@ -64,7 +64,7 @@ const MessageBubble = React.memo(function MessageBubble({ message }: { message: 
         backgroundColor: colors.accent, borderRadius: 16, padding: 12,
         marginBottom: spacing.sm,
       }}>
-        <Text variant="body" color="#fff">{message.content}</Text>
+        <Text variant="body" color={colors.textInverse}>{message.content}</Text>
       </View>
     );
   }

@@ -107,22 +107,25 @@ export default function HomeScreen() {
         </View>
 
         {/* Suggested prompts */}
-        <View style={{ width: '100%', gap: spacing.sm }}>
+        <View style={{
+          flexDirection: 'row', flexWrap: 'wrap',
+          justifyContent: 'center', gap: spacing.sm,
+        }}>
           {SUGGESTED_PROMPTS.map((prompt) => (
             <Pressable
               key={prompt}
               onPress={() => handleSend(prompt)}
               style={({ pressed }) => ({
-                paddingVertical: spacing.md,
+                paddingVertical: spacing.sm,
                 paddingHorizontal: spacing.lg,
-                borderRadius: radius.md,
+                borderRadius: radius.full,
                 borderWidth: 0.5,
                 borderColor: colors.borderSubtle,
                 backgroundColor: pressed ? colors.surfaceHover : 'transparent',
-                ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+                ...(Platform.OS === 'web' ? { cursor: 'pointer', transition: 'background-color 0.15s ease' } : {}),
               })}
             >
-              <Text variant="body" color={colors.accent}>{prompt}</Text>
+              <Text variant="caption" color={colors.textSecondary}>{prompt}</Text>
             </Pressable>
           ))}
         </View>
