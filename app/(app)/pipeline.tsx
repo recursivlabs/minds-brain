@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/auth';
 import { Text, Card, Button, Input } from '../../components';
 import { StatCard } from '../../components/StatCard';
 import { colors, spacing, radius, typography } from '../../constants/theme';
-import { Deal, DealStage, STAGES, listDeals, createDeal, updateDeal, deleteDeal, seedIfEmpty } from '../../lib/pipeline';
+import { Deal, DealStage, STAGES, listDeals, createDeal, updateDeal, deleteDeal } from '../../lib/pipeline';
 
 // ── Stage badge ────────────────────────────────────────────────────────────
 
@@ -243,7 +243,6 @@ export default function PipelineScreen() {
   const loadDeals = React.useCallback(async () => {
     if (!sdk) return;
     try {
-      await seedIfEmpty(sdk);
       const rows = await listDeals(sdk);
       setDeals(rows);
     } catch (err) {
