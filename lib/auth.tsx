@@ -119,6 +119,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       { name: 'brain-' + Date.now(), scopes: [...API_KEY_SCOPES], organizationId: ORG_ID },
     );
 
+    // Check org membership — reject if not a member of this org
+    const sdk = createAuthedSdk(result.apiKey);
+    try {
+      const orgs = await sdk.organizations.list();
+      const isMember = (orgs.data || []).some((o: any) => o.id === ORG_ID);
+      if (!isMember) {
+        throw new Error('You do not have access to this app. Contact an admin for an invite.');
+      }
+    } catch (err: any) {
+      if (err.message?.includes('do not have access')) throw err;
+      throw new Error('Failed to verify access. Please try again.');
+    }
+
     await persistSession(result.apiKey, {
       id: result.user?.id || '',
       name: result.user?.name || '',
