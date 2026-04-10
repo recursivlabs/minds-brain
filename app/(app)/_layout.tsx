@@ -3,7 +3,9 @@ import { View, useWindowDimensions } from 'react-native';
 import { Slot, useRouter } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { ensureBrainAgent } from '../../lib/agent';
+import { useAiChat } from '../../lib/use-ai-chat';
 import { useConversations } from '../../lib/hooks';
+import { chatNavigationEvent } from '../../lib/chat-events';
 import { Sidebar } from '../../components/Sidebar';
 import { colors } from '../../constants/theme';
 
@@ -11,7 +13,13 @@ export const BrainContext = React.createContext<{
   agentId: string | null;
   conversations: any[];
   refreshConversations: () => void;
-}>({ agentId: null, conversations: [], refreshConversations: () => {} });
+  chat: ReturnType<typeof useAiChat>;
+}>({
+  agentId: null,
+  conversations: [],
+  refreshConversations: () => {},
+  chat: {} as any,
+});
 
 export function useBrain() {
   return React.useContext(BrainContext);
@@ -37,20 +45,38 @@ export default function AppLayout() {
     }
   }, [sdk]);
 
+  const chat = useAiChat(sdk, agentId);
   const { conversations, refresh: refreshConversations } = useConversations(sdk, agentId);
+
+  // Listen for chat navigation events (from sidebar conversation clicks)
+  React.useEffect(() => {
+    const unsubscribe = chatNavigationEvent.subscribe((event) => {
+      if (event.type === 'new') {
+        chat.clearMessages();
+        router.push('/(app)');
+      } else if (event.type === 'open' && event.conversationId) {
+        chat.loadConversation(event.conversationId);
+        router.push(`/(app)/chat/${event.conversationId}`);
+      }
+    });
+    return unsubscribe;
+  }, [chat.clearMessages, chat.loadConversation]);
 
   if (isLoading || !isAuthenticated) {
     return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   }
 
   return (
-    <BrainContext.Provider value={{ agentId, conversations, refreshConversations }}>
+    <BrainContext.Provider value={{ agentId, conversations, refreshConversations, chat }}>
       <View style={{ flex: 1, flexDirection: 'row', backgroundColor: colors.bg }}>
         {isDesktop && (
           <Sidebar
             conversations={conversations}
             userName={user?.name}
-            onNewChat={() => router.push('/(app)')}
+            onNewChat={() => {
+              chat.clearMessages();
+              router.push('/(app)');
+            }}
             onSignOut={signOut}
           />
         )}

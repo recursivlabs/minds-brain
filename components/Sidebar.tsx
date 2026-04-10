@@ -2,6 +2,7 @@ import * as React from 'react';
 import { View, Pressable, ScrollView, Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { chatNavigationEvent } from '../lib/chat-events';
 import { Text } from './Text';
 import { Avatar } from './Avatar';
 import { colors, spacing, radius } from '../constants/theme';
@@ -90,7 +91,7 @@ export function Sidebar({ conversations, userName, onNewChat, onSignOut }: Props
             return (
               <Pressable
                 key={c.id}
-                onPress={() => router.push(`/(app)/chat/${c.id}`)}
+                onPress={() => chatNavigationEvent.emit({ type: 'open', conversationId: c.id })}
                 style={{
                   paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
                   borderRadius: radius.sm, marginBottom: 2,

@@ -1,14 +1,11 @@
 import * as React from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View, TextInput, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '../../lib/auth';
 import { useBrain } from './_layout';
 import { invalidate } from '../../lib/cache';
 import { Text } from '../../components';
-import { PromptChip } from '../../components/PromptChip';
-import { ChatInput } from '../../components/ChatInput';
-import { colors, spacing } from '../../constants/theme';
+import { colors, spacing, radius, typography } from '../../constants/theme';
 
 const SUGGESTED_PROMPTS = [
   "What's our cash position?",
@@ -21,30 +18,26 @@ const SUGGESTED_PROMPTS = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { sdk } = useAuth();
-  const { agentId, refreshConversations } = useBrain();
-  const [message, setMessage] = React.useState('');
-  const [sending, setSending] = React.useState(false);
+  const { agentId, refreshConversations, chat } = useBrain();
+  const [input, setInput] = React.useState('');
   const { width } = useWindowDimensions();
 
   async function handleSend(text?: string) {
-    const msg = text || message.trim();
-    if (!msg || !sdk || !agentId || sending) return;
-    setSending(true);
-    try {
-      const res = await sdk.agents.chat(agentId, { message: msg });
-      const conversationId = res.data?.conversation_id || res.conversation_id;
-      if (conversationId) {
+    const msg = text || input.trim();
+    if (!msg || chat.isStreaming || !agentId) return;
+    setInput('');
+
+    // Send message through the shared chat hook
+    await chat.sendMessage(msg);
+
+    // Wait a tick for conversationId to update, then navigate
+    setTimeout(() => {
+      if (chat.conversationId) {
         invalidate(`conversations:${agentId}`);
         refreshConversations();
-        router.push(`/(app)/chat/${conversationId}`);
+        router.push(`/(app)/chat/${chat.conversationId}`);
       }
-    } catch (err) {
-      console.warn('Failed to send:', err);
-    } finally {
-      setSending(false);
-      setMessage('');
-    }
+    }, 100);
   }
 
   return (
@@ -61,35 +54,76 @@ export default function HomeScreen() {
           style={{ marginBottom: spacing.xl }}
         />
         <Text variant="h1" align="center" style={{ marginBottom: spacing.sm }}>
-          Minds Brain
+          How can I help?
         </Text>
-        <Text variant="body" color={colors.textSecondary} align="center" style={{ marginBottom: spacing['4xl'] }}>
+        <Text variant="body" color={colors.textSecondary} align="center" style={{ marginBottom: spacing['3xl'] }}>
           Ask anything about your business
         </Text>
 
         {/* Prompt input */}
-        <View style={{ width: '100%', marginBottom: spacing['2xl'] }}>
-          <ChatInput
-            value={message}
-            onChangeText={setMessage}
-            onSend={() => handleSend()}
+        <View style={{
+          flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm,
+          width: '100%', marginBottom: spacing['2xl'],
+        }}>
+          <TextInput
+            value={input}
+            onChangeText={setInput}
             placeholder="Ask Minds Brain anything..."
-            disabled={sending || !agentId}
+            placeholderTextColor={colors.textMuted}
+            multiline
             autoFocus={width >= 1024}
+            onKeyPress={(e: any) => {
+              if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            style={{
+              flex: 1, maxHeight: 120,
+              backgroundColor: colors.glass,
+              borderWidth: 0.5, borderColor: colors.glassBorder,
+              borderRadius: radius.lg,
+              paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+              color: colors.text,
+              ...typography.body,
+              ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as any : {}),
+            }}
           />
+          <Pressable
+            onPress={() => handleSend()}
+            style={{
+              width: 40, height: 40, borderRadius: radius.full,
+              backgroundColor: input.trim() ? colors.accent : colors.glass,
+              alignItems: 'center', justifyContent: 'center',
+              ...(Platform.OS === 'web' ? { cursor: input.trim() ? 'pointer' : 'default' } : {}),
+            }}
+          >
+            <MaterialCommunityIcons
+              name="arrow-up"
+              size={20}
+              color={input.trim() ? colors.textInverse : colors.textMuted}
+            />
+          </Pressable>
         </View>
 
         {/* Suggested prompts */}
-        <View style={{
-          flexDirection: 'row', flexWrap: 'wrap',
-          justifyContent: 'center', gap: spacing.sm,
-        }}>
+        <View style={{ width: '100%', gap: spacing.sm }}>
           {SUGGESTED_PROMPTS.map((prompt) => (
-            <PromptChip
+            <Pressable
               key={prompt}
-              label={prompt}
               onPress={() => handleSend(prompt)}
-            />
+              style={({ pressed }) => ({
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+                borderRadius: radius.md,
+                borderWidth: 0.5,
+                borderColor: colors.borderSubtle,
+                backgroundColor: pressed ? colors.surfaceHover : 'transparent',
+                ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+              })}
+            >
+              <Text variant="body" color={colors.accent}>{prompt}</Text>
+            </Pressable>
           ))}
         </View>
       </View>
