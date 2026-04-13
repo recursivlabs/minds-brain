@@ -20,24 +20,32 @@ export default function HomeScreen() {
   const router = useRouter();
   const { agentId, refreshConversations, chat } = useBrain();
   const [input, setInput] = React.useState('');
+  const [sending, setSending] = React.useState(false);
   const { width } = useWindowDimensions();
 
   async function handleSend(text?: string) {
     const msg = text || input.trim();
-    if (!msg || chat.isStreaming || !agentId) return;
+    if (!msg || sending || !agentId) return;
     setInput('');
+    setSending(true);
 
-    // Send message through the shared chat hook
-    await chat.sendMessage(msg);
+    // Clear any previous conversation so this starts fresh
+    chat.clearMessages();
 
-    // Wait a tick for conversationId to update, then navigate
-    setTimeout(() => {
-      if (chat.conversationId) {
-        invalidate(`conversations:${agentId}`);
-        refreshConversations();
-        router.push(`/(app)/chat/${chat.conversationId}`);
-      }
-    }, 100);
+    // Navigate to a new chat screen immediately
+    router.push('/(app)/chat/new');
+
+    // Send the message — the chat screen will pick up the messages via shared state
+    const convId = await chat.sendMessage(msg);
+
+    if (convId) {
+      invalidate(`conversations:${agentId}`);
+      refreshConversations();
+      // Replace the URL with the real conversation ID
+      router.replace(`/(app)/chat/${convId}`);
+    }
+
+    setSending(false);
   }
 
   return (
@@ -91,17 +99,16 @@ export default function HomeScreen() {
           />
           <Pressable
             onPress={() => handleSend()}
-            style={{
+            style={[{
               width: 40, height: 40, borderRadius: radius.full,
-              backgroundColor: input.trim() ? colors.accent : colors.glass,
-              alignItems: 'center', justifyContent: 'center',
-              ...(Platform.OS === 'web' ? { cursor: input.trim() ? 'pointer' : 'default' } : {}),
-            }}
+              backgroundColor: input.trim() && !sending ? colors.accent : colors.glass,
+              alignItems: 'center' as const, justifyContent: 'center' as const,
+            }, Platform.OS === 'web' ? { cursor: input.trim() && !sending ? 'pointer' : 'default' } as any : {}]}
           >
             <MaterialCommunityIcons
               name="arrow-up"
               size={20}
-              color={input.trim() ? colors.textInverse : colors.textMuted}
+              color={input.trim() && !sending ? colors.textInverse : colors.textMuted}
             />
           </Pressable>
         </View>

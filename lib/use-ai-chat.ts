@@ -14,10 +14,11 @@ export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
 
   const sendMessage = useCallback(
-    async (text: string) => {
-      if (isStreaming || !sdk) return;
+    async (text: string): Promise<string | null> => {
+      if (isStreaming || !sdk) return null;
 
       const userMsg: ChatMessage = {
         id: 'user-' + Date.now(),
@@ -42,12 +43,12 @@ export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
       setIsStreaming(true);
 
       try {
-        const result = await callAI(sdk, agentId, text, conversationId || undefined);
+        const result = await callAI(sdk, agentId, text, conversationIdRef.current || undefined);
         if (result.conversationId) {
+          conversationIdRef.current = result.conversationId;
           setConversationId(result.conversationId);
         }
 
-        // Clean up code fences from response
         let cleanText = result.content
           .replace(/```(?:json|javascript|js|typescript|ts|action)?\s*\n([\s\S]*?)```/g, '')
           .replace(/```\w*\s*/g, '')
@@ -61,6 +62,8 @@ export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
               : m
           )
         );
+
+        return result.conversationId || null;
       } catch (err: any) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -69,16 +72,18 @@ export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
               : m
           )
         );
+        return conversationIdRef.current;
       } finally {
         setIsStreaming(false);
       }
     },
-    [sdk, agentId, isStreaming, conversationId]
+    [sdk, agentId, isStreaming]
   );
 
   const clearMessages = useCallback(() => {
     setMessages([]);
     setConversationId(null);
+    conversationIdRef.current = null;
   }, []);
 
   const loadConversation = useCallback(
@@ -96,6 +101,7 @@ export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
           }));
         setMessages(loaded);
         setConversationId(convId);
+        conversationIdRef.current = convId;
       } catch (err: any) {
         console.error('[useAiChat] loadConversation error:', err.message);
       }
