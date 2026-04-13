@@ -2,7 +2,9 @@ import * as React from 'react';
 import { View, TextInput, Pressable, Platform, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../../lib/auth';
 import { useBrain } from './_layout';
+import { callAI } from '../../lib/ai';
 import { invalidate } from '../../lib/cache';
 import { Text } from '../../components';
 import { colors, spacing, radius, typography } from '../../constants/theme';
@@ -18,31 +20,32 @@ const SUGGESTED_PROMPTS = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { agentId, refreshConversations, chat } = useBrain();
+  const { sdk } = useAuth();
+  const { agentId, refreshConversations } = useBrain();
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const { width } = useWindowDimensions();
 
   async function handleSend(text?: string) {
     const msg = text || input.trim();
-    if (!msg || sending || !agentId) return;
+    if (!msg || sending || !agentId || !sdk) return;
     setInput('');
     setSending(true);
 
-    // Clear any previous conversation so this starts fresh
-    chat.clearMessages();
+    try {
+      // Call the AI directly — no shared state, just get the conversation ID
+      const result = await callAI(sdk, agentId, msg);
 
-    // Send message and wait for conversation ID
-    const convId = await chat.sendMessage(msg);
-
-    if (convId) {
-      invalidate(`conversations:${agentId}`);
-      refreshConversations();
-      // Navigate to the real conversation
-      router.push(`/(app)/chat/${convId}`);
+      if (result.conversationId) {
+        invalidate(`conversations:${agentId}`);
+        refreshConversations();
+        router.push(`/(app)/chat/${result.conversationId}`);
+      }
+    } catch (err) {
+      console.warn('Failed to send:', err);
+    } finally {
+      setSending(false);
     }
-
-    setSending(false);
   }
 
   return (
@@ -53,7 +56,6 @@ export default function HomeScreen() {
     }}>
       <View style={{ alignItems: 'center', maxWidth: 600, width: '100%' }}>
         {sending ? (
-          // Show loading state while first message is being sent
           <View style={{ alignItems: 'center', gap: spacing.xl }}>
             <MaterialCommunityIcons name="brain" size={40} color={colors.accent} />
             <Text variant="h3" color={colors.textSecondary}>Thinking...</Text>

@@ -6,11 +6,12 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../../lib/auth';
 import { useBrain } from '../_layout';
+import { useAiChat, type ChatMessage } from '../../../lib/use-ai-chat';
 import { invalidate } from '../../../lib/cache';
 import { Text } from '../../../components';
 import { colors, spacing, radius, typography } from '../../../constants/theme';
-import type { ChatMessage } from '../../../lib/use-ai-chat';
 
 // ─── Typing Indicator ────────────────────────────────────────
 
@@ -81,7 +82,6 @@ const MessageBubble = React.memo(function MessageBubble({ message }: { message: 
     );
   }
 
-  // Assistant message with simple markdown rendering
   const renderContent = () => {
     if (Platform.OS === 'web') {
       const html = message.content
@@ -124,14 +124,18 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { agentId, refreshConversations, chat } = useBrain();
-  const { messages, isStreaming, sendMessage, loadConversation } = chat;
+  const { sdk } = useAuth();
+  const { agentId, refreshConversations } = useBrain();
+
+  // Each chat screen has its OWN chat state — not shared with home or other chats
+  const { messages, isStreaming, sendMessage, loadConversation } = useAiChat(sdk, agentId);
+
   const [input, setInput] = React.useState('');
   const flatListRef = React.useRef<FlatList>(null);
 
-  // Load conversation if navigating to a specific one (skip placeholder IDs)
+  // Load this conversation's messages on mount
   React.useEffect(() => {
-    if (id && id !== 'new' && chat.conversationId !== id) {
+    if (id) {
       loadConversation(id);
     }
   }, [id]);
@@ -141,7 +145,6 @@ export default function ChatScreen() {
     if (!text || isStreaming) return;
     setInput('');
     await sendMessage(text);
-    // Refresh sidebar conversations
     if (agentId) {
       invalidate(`conversations:${agentId}`);
       refreshConversations();
@@ -177,10 +180,7 @@ export default function ChatScreen() {
         <Text variant="h3">Minds Brain</Text>
         <View style={{ flex: 1 }} />
         <Pressable
-          onPress={() => {
-            chat.clearMessages();
-            router.push('/(app)');
-          }}
+          onPress={() => router.push('/(app)')}
           style={Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}}
         >
           <MaterialCommunityIcons name="plus" size={22} color={colors.textSecondary} />
@@ -199,7 +199,7 @@ export default function ChatScreen() {
         renderItem={({ item }) => <MessageBubble message={item} />}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', paddingTop: spacing['6xl'] }}>
-            <Text variant="body" color={colors.textMuted}>Start the conversation</Text>
+            <Text variant="body" color={colors.textMuted}>Loading conversation...</Text>
           </View>
         }
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
@@ -242,13 +242,12 @@ export default function ChatScreen() {
         />
         <Pressable
           onPress={input.trim() && !isStreaming ? handleSend : undefined}
-          style={{
+          style={[{
             width: 40, height: 40, borderRadius: 20,
             backgroundColor: input.trim() && !isStreaming ? colors.accent : colors.glass,
-            alignItems: 'center', justifyContent: 'center',
+            alignItems: 'center' as const, justifyContent: 'center' as const,
             opacity: isStreaming ? 0.5 : 1,
-            ...(Platform.OS === 'web' ? { cursor: input.trim() && !isStreaming ? 'pointer' : 'default' } : {}),
-          } as any}
+          }, Platform.OS === 'web' ? { cursor: input.trim() && !isStreaming ? 'pointer' : 'default' } as any : {}]}
         >
           <MaterialCommunityIcons
             name="send"
