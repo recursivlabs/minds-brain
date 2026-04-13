@@ -10,7 +10,8 @@ export async function callAI(
   sdk: Recursiv,
   agentId: string | null,
   prompt: string,
-  conversationId?: string
+  conversationId?: string,
+  newConversation?: boolean,
 ): Promise<{ content: string; conversationId: string }> {
   if (!agentId) {
     throw new Error('No AI agent available.');
@@ -23,6 +24,7 @@ export async function callAI(
       const result = await sdk.agents.chatStreamText(agentId, {
         message: prompt,
         ...(conversationId ? { conversation_id: conversationId } : {}),
+        ...(newConversation ? { new_conversation: true } : {}),
       });
 
       return { content: result.content, conversationId: result.conversationId };

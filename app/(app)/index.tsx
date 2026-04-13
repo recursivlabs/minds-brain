@@ -33,8 +33,8 @@ export default function HomeScreen() {
     setSending(true);
 
     try {
-      // Call the AI directly — no shared state, just get the conversation ID
-      const result = await callAI(sdk, agentId, msg);
+      // Call the AI directly — force a new conversation each time from home
+      const result = await callAI(sdk, agentId, msg, undefined, true);
 
       if (result.conversationId) {
         invalidate(`conversations:${agentId}`);
