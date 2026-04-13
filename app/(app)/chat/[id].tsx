@@ -129,9 +129,9 @@ export default function ChatScreen() {
   const [input, setInput] = React.useState('');
   const flatListRef = React.useRef<FlatList>(null);
 
-  // Load conversation if navigating to a specific one
+  // Load conversation if navigating to a specific one (skip placeholder IDs)
   React.useEffect(() => {
-    if (id && chat.conversationId !== id) {
+    if (id && id !== 'new' && chat.conversationId !== id) {
       loadConversation(id);
     }
   }, [id]);
