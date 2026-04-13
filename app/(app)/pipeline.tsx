@@ -57,13 +57,13 @@ function DealRow({ deal, onPress }: { deal: Deal; onPress: () => void }) {
         <Text variant="bodyMedium" numberOfLines={1}>{deal.name}</Text>
         <Text variant="caption" color={colors.textMuted} numberOfLines={1}>{deal.company}</Text>
       </View>
-      <View style={{ minWidth: 80, alignItems: 'flex-end' }}>
+      <View style={{ minWidth: 80 }}>
         <Text variant="bodyMedium" color={deal.deal_value ? colors.text : colors.textMuted}>
           {fmt(deal.deal_value)}
         </Text>
       </View>
       <StageBadge stage={deal.stage} />
-      <View style={{ minWidth: 100, alignItems: 'flex-end' }}>
+      <View style={{ minWidth: 100 }}>
         <Text variant="caption" color={colors.textSecondary}>
           {deal.last_contact ? new Date(deal.last_contact).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
         </Text>
@@ -360,13 +360,13 @@ export default function PipelineScreen() {
           <View style={{ flex: 1 }}>
             <Text variant="label" color={colors.textMuted}>Deal</Text>
           </View>
-          <View style={{ minWidth: 80, alignItems: 'flex-end' }}>
+          <View style={{ minWidth: 80 }}>
             <Text variant="label" color={colors.textMuted}>Value</Text>
           </View>
           <View style={{ minWidth: 80 }}>
             <Text variant="label" color={colors.textMuted}>Stage</Text>
           </View>
-          <View style={{ minWidth: 100, alignItems: 'flex-end' }}>
+          <View style={{ minWidth: 100 }}>
             <Text variant="label" color={colors.textMuted}>Last Contact</Text>
           </View>
         </View>
