@@ -3,6 +3,7 @@ import { View, ScrollView, Pressable, Platform, Linking, ActivityIndicator } fro
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { ORG_ID } from '../../lib/recursiv';
+import { ensureBrainAgent } from '../../lib/agent';
 import { Text, Card, Button } from '../../components';
 import { colors, spacing, radius } from '../../constants/theme';
 
@@ -149,23 +150,53 @@ export default function SettingsScreen() {
     }
   }
 
+  // Grant the Brain agent access to a connection
+  async function grantAgentAccess(integrationId: string) {
+    if (!sdk) return;
+    try {
+      const agentId = await ensureBrainAgent(sdk);
+      await sdk.integrations.updateAgentIntegration(agentId, {
+        user_integration_id: integrationId,
+        enabled: true,
+      });
+      console.log('Granted Brain agent access to integration:', integrationId);
+    } catch (err: any) {
+      console.warn('Failed to grant agent access:', err.message);
+    }
+  }
+
   // Check for OAuth callback (connection_id in URL params)
   React.useEffect(() => {
     if (Platform.OS !== 'web' || !sdk) return;
     const params = new URLSearchParams(window.location.search);
     const connectionId = params.get('connection_id');
     if (connectionId) {
-      // Confirm the connection
+      // Confirm the connection, then grant agent access
       sdk.integrations.confirmConnection({ connection_id: connectionId })
-        .then(async () => {
+        .then(async (confirmed) => {
           const updated = await sdk.integrations.listConnections(ORG_ID);
           setConnections(updated.data || []);
+          // Grant the Brain agent access to this new connection
+          const newConn = (updated.data || []).find((c: any) =>
+            c.composio_connected_account_id && !connections.some((existing: any) => existing.id === c.id)
+          );
+          if (newConn) {
+            await grantAgentAccess(newConn.id);
+          }
           // Clean URL
           window.history.replaceState({}, '', window.location.pathname);
         })
         .catch((err: any) => console.warn('Confirm failed:', err.message));
     }
   }, [sdk]);
+
+  // On load, ensure all existing connections are granted to the Brain agent
+  React.useEffect(() => {
+    if (connections.length === 0 || !sdk) return;
+    connections.forEach((conn: any) => {
+      grantAgentAccess(conn.id);
+    });
+  }, [connections.length]);
 
   return (
     <ScrollView
