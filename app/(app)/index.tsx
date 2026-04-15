@@ -1,18 +1,66 @@
 import * as React from 'react';
-import { View, TextInput, Pressable, Platform, useWindowDimensions } from 'react-native';
+import { View, TextInput, Pressable, Platform, useWindowDimensions, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useBrain } from './_layout';
 import { Text } from '../../components';
 import { colors, spacing, radius, typography } from '../../constants/theme';
 
-const SUGGESTED_PROMPTS = [
-  "What's our cash position?",
-  "Summarize this month's P&L",
-  "How are DAUs trending?",
-  "Any unusual expenses?",
-  "What should I be worried about?",
-  "Compare revenue MoM",
+const CAPABILITIES = [
+  {
+    icon: 'cash-multiple',
+    label: 'Finance',
+    prompts: [
+      "What's our cash position?",
+      "Summarize this month's P&L",
+      "Any unusual expenses?",
+    ],
+  },
+  {
+    icon: 'chart-line',
+    label: 'Analytics',
+    prompts: [
+      "How are DAUs trending?",
+      "What's our MRR?",
+      "Compare revenue MoM",
+    ],
+  },
+  {
+    icon: 'magnify',
+    label: 'Research',
+    prompts: [
+      "Research competitors in our space",
+      "Find CPAs that specialize in creator businesses",
+      "What are the latest trends in subscription content?",
+    ],
+  },
+  {
+    icon: 'pencil-outline',
+    label: 'Create',
+    prompts: [
+      "Draft a blog post about our new show",
+      "Write an investor update email",
+      "Generate a thumbnail concept for the podcast",
+    ],
+  },
+  {
+    icon: 'brain',
+    label: 'Remember',
+    prompts: [
+      "Remember that our lease renews in August",
+      "What did I tell you about the cap table?",
+      "What are our current priorities?",
+    ],
+  },
+  {
+    icon: 'email-outline',
+    label: 'Act',
+    prompts: [
+      "Send Ryan the monthly summary",
+      "Create a task to review Q2 taxes",
+      "Schedule a reminder for the board meeting",
+    ],
+  },
 ];
 
 export default function HomeScreen() {
@@ -20,6 +68,7 @@ export default function HomeScreen() {
   const { agentId } = useBrain();
   const [input, setInput] = React.useState('');
   const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
 
   function handleSend(text?: string) {
     const msg = text || input.trim();
@@ -29,37 +78,42 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={{
-      flex: 1, backgroundColor: colors.bg,
-      alignItems: 'center', justifyContent: 'center',
-      paddingHorizontal: spacing['3xl'],
-    }}>
-      <View style={{ alignItems: 'center', maxWidth: 600, width: '100%' }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing['4xl'],
+      }}
+    >
+      <View style={{ alignItems: 'center', maxWidth: 680, width: '100%' }}>
         <MaterialCommunityIcons
           name="brain"
-          size={40}
+          size={36}
           color={colors.accent}
-          style={{ marginBottom: spacing.xl }}
+          style={{ marginBottom: spacing.lg }}
         />
         <Text variant="h1" align="center" style={{ marginBottom: spacing.sm }}>
-          How can I help?
+          What do you need?
         </Text>
         <Text variant="body" color={colors.textSecondary} align="center" style={{ marginBottom: spacing['3xl'] }}>
-          Ask anything about your business
+          Ask anything. Brain will answer it, research it, draft it, or do it.
         </Text>
 
         {/* Prompt input */}
         <View style={{
           flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm,
-          width: '100%', marginBottom: spacing['2xl'],
+          width: '100%', maxWidth: 560, marginBottom: spacing['4xl'],
         }}>
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Ask Minds Brain anything..."
+            placeholder="Ask, create, research, or automate..."
             placeholderTextColor={colors.textMuted}
             multiline
-            autoFocus={width >= 1024}
+            autoFocus={isDesktop}
             onKeyPress={(e: any) => {
               if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
                 e.preventDefault();
@@ -93,30 +147,53 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Suggested prompts */}
+        {/* Capability grid */}
         <View style={{
           flexDirection: 'row', flexWrap: 'wrap',
-          justifyContent: 'center', gap: spacing.sm,
+          gap: spacing.md, width: '100%',
+          justifyContent: 'center',
         }}>
-          {SUGGESTED_PROMPTS.map((prompt) => (
-            <Pressable
-              key={prompt}
-              onPress={() => handleSend(prompt)}
-              style={({ pressed }) => ({
-                paddingVertical: spacing.sm,
-                paddingHorizontal: spacing.lg,
-                borderRadius: radius.full,
-                borderWidth: 0.5,
-                borderColor: colors.borderSubtle,
-                backgroundColor: pressed ? colors.surfaceHover : 'transparent',
-                ...(Platform.OS === 'web' ? { cursor: 'pointer', transition: 'background-color 0.15s ease' } : {}),
-              })}
+          {CAPABILITIES.map((cap) => (
+            <View
+              key={cap.label}
+              style={{
+                width: isDesktop ? '31%' : '47%',
+                minWidth: isDesktop ? 200 : 150,
+              }}
             >
-              <Text variant="caption" color={colors.textSecondary}>{prompt}</Text>
-            </Pressable>
+              {/* Category header */}
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                marginBottom: spacing.sm,
+              }}>
+                <MaterialCommunityIcons name={cap.icon as any} size={16} color={colors.textMuted} />
+                <Text variant="label" color={colors.textMuted}>{cap.label}</Text>
+              </View>
+
+              {/* Prompt buttons */}
+              <View style={{ gap: spacing.xs }}>
+                {cap.prompts.map((prompt) => (
+                  <Pressable
+                    key={prompt}
+                    onPress={() => handleSend(prompt)}
+                    style={({ pressed }) => ({
+                      paddingVertical: spacing.sm,
+                      paddingHorizontal: spacing.md,
+                      borderRadius: radius.sm,
+                      backgroundColor: pressed ? colors.surfaceHover : colors.glass,
+                      borderWidth: 0.5,
+                      borderColor: colors.borderSubtle,
+                      ...(Platform.OS === 'web' ? { cursor: 'pointer', transition: 'background-color 0.15s ease' } : {}),
+                    })}
+                  >
+                    <Text variant="caption" color={colors.textSecondary} numberOfLines={2}>{prompt}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           ))}
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
