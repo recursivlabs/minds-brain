@@ -2,7 +2,8 @@ import * as React from 'react';
 import { View, ScrollView, Pressable, Platform, Linking, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
-import { ORG_ID, PROJECT_ID } from '../../lib/recursiv';
+import { ORG_ID, PROJECT_ID, BASE_URL } from '../../lib/recursiv';
+import * as storage from '../../lib/storage';
 import { ensureBrainAgent } from '../../lib/agent';
 import { Text, Card, Button, Input } from '../../components';
 import { colors, spacing, radius, typography } from '../../constants/theme';
@@ -245,9 +246,19 @@ export default function SettingsScreen() {
       const hasApiKey = schemes.some((s: string) => s === 'API_KEY' || s === 'BEARER_TOKEN' || s === 'BASIC');
 
       if (!hasOAuth && hasApiKey) {
-        // Show API key input modal
+        // Fetch required fields from Composio for this auth type
+        const authScheme = schemes.find((s: string) => s === 'API_KEY') || schemes[0];
+        let fields: any[] = [];
+        try {
+          const fieldsRes = await sdk.integrations.getAuthConfigFields(provider, authScheme as any);
+          fields = fieldsRes.data?.required || [];
+        } catch {
+          // Fallback: generic API key field
+          fields = [{ name: 'api_key', display_name: 'API Key', description: 'Your API key', type: 'string', required: true }];
+        }
+
         const name = PROVIDER_META[provider]?.name || provider;
-        setApiKeyModal({ provider, name, fields: [] });
+        setApiKeyModal({ provider, name, fields });
         setApiKeyValue('');
         setConnecting(null);
         return;
@@ -274,12 +285,32 @@ export default function SettingsScreen() {
     if (!sdk || !apiKeyModal || !apiKeyValue.trim()) return;
     setApiKeySubmitting(true);
     try {
-      // Call the API key endpoint directly (SDK method available after rebuild)
-      await (sdk as any).integrations.client.post('/integrations/connections/connect-apikey', {
-        provider: apiKeyModal.provider,
-        organization_id: ORG_ID,
-        credentials: { api_key: apiKeyValue.trim() },
+      // Build credentials using the actual field name from Composio
+      const fieldName = apiKeyModal.fields?.[0]?.name || 'api_key';
+      const credentials: Record<string, string> = { [fieldName]: apiKeyValue.trim() };
+
+      // Get the API key from storage for auth header
+      const storedKey = await storage.getItem('brain:api_key');
+
+      // Direct fetch to the connect-apikey endpoint
+      const res = await fetch(`${BASE_URL}/integrations/connections/connect-apikey`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(storedKey ? { 'Authorization': `Bearer ${storedKey}` } : {}),
+        },
+        body: JSON.stringify({
+          provider: apiKeyModal.provider,
+          organization_id: ORG_ID,
+          credentials,
+        }),
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`${res.status} ${JSON.stringify(err)}`);
+      }
+
       // Refresh connections
       const updated = await sdk.integrations.listConnections(ORG_ID);
       setConnections(updated.data || []);
@@ -602,13 +633,13 @@ export default function SettingsScreen() {
             </View>
 
             <Text variant="body" color={colors.textSecondary} style={{ marginBottom: spacing.xl }}>
-              Enter your API key to connect {apiKeyModal?.name}. You can find this in your {apiKeyModal?.name} account settings.
+              {apiKeyModal?.fields?.[0]?.description || `Enter your API key to connect ${apiKeyModal?.name}. You can find this in your ${apiKeyModal?.name} account settings.`}
             </Text>
 
             <TextInput
               value={apiKeyValue}
               onChangeText={setApiKeyValue}
-              placeholder="Paste your API key here..."
+              placeholder={apiKeyModal?.fields?.[0]?.display_name || 'Paste your API key here...'}
               placeholderTextColor={colors.textMuted}
               secureTextEntry
               style={{
