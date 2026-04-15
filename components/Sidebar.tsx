@@ -70,7 +70,6 @@ export function Sidebar({ conversations, userName, onNewChat, onSignOut }: Props
       {/* Nav items */}
       <View style={{ paddingHorizontal: spacing.md, gap: spacing.xs, marginBottom: spacing['2xl'] }}>
         <NavItem icon="home-outline" label="Home" active={pathname === '/(app)'  || pathname === '/'} onPress={() => router.push('/(app)')} />
-        <NavItem icon="handshake-outline" label="Pipeline" active={pathname.includes('pipeline')} onPress={() => router.push('/(app)/pipeline')} />
         <NavItem icon="view-dashboard-outline" label="Dashboard" active={pathname.includes('dashboard')} onPress={() => router.push('/(app)/dashboard')} />
         <NavItem icon="cog-outline" label="Settings" active={pathname.includes('settings')} onPress={() => router.push('/(app)/settings')} />
       </View>
