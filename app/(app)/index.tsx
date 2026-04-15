@@ -90,7 +90,7 @@ export default function HomeScreen() {
         {/* Prompt input */}
         <View style={{
           flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm,
-          width: '100%', maxWidth: 560, marginBottom: spacing['4xl'],
+          width: '100%', marginBottom: spacing['4xl'],
         }}>
           <TextInput
             value={input}
