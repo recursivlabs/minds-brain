@@ -306,7 +306,7 @@ export default function SettingsScreen() {
   const [searchResults, setSearchResults] = React.useState<any[] | null>(null);
   const [searching, setSearching] = React.useState(false);
   const [apiKeyModal, setApiKeyModal] = React.useState<{ provider: string; name: string; fields: any[] } | null>(null);
-  const [apiKeyValue, setApiKeyValue] = React.useState('');
+  const [apiKeyValues, setApiKeyValues] = React.useState<Record<string, string>>({});
   const [apiKeySubmitting, setApiKeySubmitting] = React.useState(false);
 
   // ── Knowledge base state ──
@@ -380,7 +380,7 @@ export default function SettingsScreen() {
 
         const name = PROVIDER_META[provider]?.name || provider;
         setApiKeyModal({ provider, name, fields });
-        setApiKeyValue('');
+        setApiKeyValues({});
         setConnecting(null);
         return;
       }
@@ -403,17 +403,20 @@ export default function SettingsScreen() {
 
   // ── Submit API key ──
   async function handleApiKeySubmit() {
-    if (!sdk || !apiKeyModal || !apiKeyValue.trim()) return;
+    if (!sdk || !apiKeyModal) return;
+    // Check all required fields have values
+    const hasAllFields = apiKeyModal.fields.every((f: any) => apiKeyValues[f.name]?.trim());
+    if (!hasAllFields) return;
     setApiKeySubmitting(true);
     try {
-      // Build credentials using the actual field name from Composio
-      const fieldName = apiKeyModal.fields?.[0]?.name || 'api_key';
-      const credentials: Record<string, string> = { [fieldName]: apiKeyValue.trim() };
+      // Build credentials from all field values
+      const credentials: Record<string, string> = {};
+      for (const field of apiKeyModal.fields) {
+        credentials[field.name] = apiKeyValues[field.name]?.trim() || '';
+      }
 
-      // Get the API key from storage for auth header
       const storedKey = await storage.getItem('brain:api_key');
 
-      // Direct fetch to the connect-apikey endpoint
       const res = await fetch(`${BASE_URL}/integrations/connections/connect-apikey`, {
         method: 'POST',
         headers: {
@@ -432,14 +435,12 @@ export default function SettingsScreen() {
         throw new Error(`${res.status} ${JSON.stringify(err)}`);
       }
 
-      // Refresh connections
       const updated = await sdk.integrations.listConnections(ORG_ID);
       setConnections(updated.data || []);
-      // Grant agent access
       const newConn = (updated.data || []).find((c: any) => c.provider === apiKeyModal.provider);
       if (newConn) await grantAgentAccess(newConn.id, apiKeyModal.provider);
       setApiKeyModal(null);
-      setApiKeyValue('');
+      setApiKeyValues({});
     } catch (err: any) {
       console.warn('API key connect failed:', err.message);
     } finally {
@@ -759,22 +760,34 @@ export default function SettingsScreen() {
             </View>
 
             <Text variant="body" color={colors.textSecondary} style={{ marginBottom: spacing.xl }}>
-              {apiKeyModal?.fields?.[0]?.description || `Enter your API key to connect ${apiKeyModal?.name}. You can find this in your ${apiKeyModal?.name} account settings.`}
+              Enter your credentials to connect {apiKeyModal?.name}.
             </Text>
 
-            <TextInput
-              value={apiKeyValue}
-              onChangeText={setApiKeyValue}
-              placeholder={apiKeyModal?.fields?.[0]?.display_name || 'Paste your API key here...'}
-              placeholderTextColor={colors.textMuted}
-              secureTextEntry
-              style={{
-                backgroundColor: colors.glass, borderWidth: 0.5, borderColor: colors.glassBorder,
-                borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11,
-                color: colors.text, ...typography.body, marginBottom: spacing.xl,
-                ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as any : {}),
-              }}
-            />
+            {(apiKeyModal?.fields || []).map((field: any) => (
+              <View key={field.name} style={{ marginBottom: spacing.md }}>
+                <Text variant="label" color={colors.textSecondary} style={{ marginBottom: spacing.xs }}>
+                  {field.display_name || field.name}
+                </Text>
+                {field.description ? (
+                  <Text variant="caption" color={colors.textMuted} style={{ marginBottom: spacing.xs }}>
+                    {field.description}
+                  </Text>
+                ) : null}
+                <TextInput
+                  value={apiKeyValues[field.name] || ''}
+                  onChangeText={(text) => setApiKeyValues(prev => ({ ...prev, [field.name]: text }))}
+                  placeholder={field.display_name || field.name}
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry={field.name.toLowerCase().includes('key') || field.name.toLowerCase().includes('secret')}
+                  style={{
+                    backgroundColor: colors.glass, borderWidth: 0.5, borderColor: colors.glassBorder,
+                    borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11,
+                    color: colors.text, ...typography.body,
+                    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as any : {}),
+                  }}
+                />
+              </View>
+            ))}
 
             <View style={{ flexDirection: 'row', gap: spacing.md, justifyContent: 'flex-end' }}>
               <Button variant="secondary" onPress={() => setApiKeyModal(null)}>Cancel</Button>
