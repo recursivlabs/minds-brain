@@ -12,8 +12,7 @@ const CAPABILITIES = [
     label: 'Finance',
     prompts: [
       "What's our cash position?",
-      "Summarize this month's P&L",
-      "Any unusual expenses?",
+      "Show me this month's P&L",
     ],
   },
   {
@@ -22,34 +21,30 @@ const CAPABILITIES = [
     prompts: [
       "How are DAUs trending?",
       "What's our MRR?",
-      "Compare revenue MoM",
     ],
   },
   {
     icon: 'magnify',
     label: 'Research',
     prompts: [
-      "Research competitors in our space",
-      "Find CPAs that specialize in creator businesses",
-      "What are the latest trends in subscription content?",
+      "Research our competitors",
+      "Find a CPA near me",
     ],
   },
   {
     icon: 'pencil-outline',
     label: 'Create',
     prompts: [
-      "Draft a blog post about our new show",
-      "Write an investor update email",
-      "Generate a thumbnail concept for the podcast",
+      "Draft an investor update",
+      "Write a blog post",
     ],
   },
   {
     icon: 'brain',
     label: 'Remember',
     prompts: [
-      "Remember that our lease renews in August",
-      "What did I tell you about the cap table?",
-      "What are our current priorities?",
+      "Remember our lease renews August",
+      "What are our priorities?",
     ],
   },
   {
@@ -57,8 +52,7 @@ const CAPABILITIES = [
     label: 'Act',
     prompts: [
       "Send Ryan the monthly summary",
-      "Create a task to review Q2 taxes",
-      "Schedule a reminder for the board meeting",
+      "Create a task for Q2 taxes",
     ],
   },
 ];
@@ -183,7 +177,7 @@ export default function HomeScreen() {
                       ...(Platform.OS === 'web' ? { cursor: 'pointer', transition: 'background-color 0.15s ease' } : {}),
                     })}
                   >
-                    <Text variant="caption" color={colors.textSecondary} numberOfLines={2}>{prompt}</Text>
+                    <Text variant="caption" color={colors.textSecondary} numberOfLines={1}>{prompt}</Text>
                   </Pressable>
                 ))}
               </View>
