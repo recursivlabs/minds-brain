@@ -89,8 +89,11 @@ export default function HomeScreen() {
 
         {/* Prompt input */}
         <View style={{
-          flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm,
           width: '100%', marginBottom: spacing['4xl'],
+          backgroundColor: colors.glass,
+          borderWidth: 0.5, borderColor: colors.glassBorder,
+          borderRadius: radius.lg,
+          flexDirection: 'row', alignItems: 'flex-end',
         }}>
           <TextInput
             value={input}
@@ -107,10 +110,8 @@ export default function HomeScreen() {
             }}
             style={{
               flex: 1, maxHeight: 120,
-              backgroundColor: colors.glass,
-              borderWidth: 0.5, borderColor: colors.glassBorder,
-              borderRadius: radius.lg,
               paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+              paddingRight: 48,
               color: colors.text,
               ...typography.body,
               ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as any : {}),
@@ -119,14 +120,15 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => handleSend()}
             style={[{
-              width: 40, height: 40, borderRadius: radius.full,
-              backgroundColor: input.trim() ? colors.accent : colors.glass,
+              width: 32, height: 32, borderRadius: radius.full,
+              backgroundColor: input.trim() ? colors.accent : 'transparent',
               alignItems: 'center' as const, justifyContent: 'center' as const,
+              position: 'absolute' as const, right: 6, bottom: 6,
             }, Platform.OS === 'web' ? { cursor: input.trim() ? 'pointer' : 'default' } as any : {}]}
           >
             <MaterialCommunityIcons
               name="arrow-up"
-              size={20}
+              size={18}
               color={input.trim() ? colors.textInverse : colors.textMuted}
             />
           </Pressable>
