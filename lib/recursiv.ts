@@ -4,6 +4,7 @@ export const BASE_URL =
   process.env.EXPO_PUBLIC_RECURSIV_API_URL ||
   'https://api.recursiv.io/api/v1';
 
+export const BASE_ORIGIN = BASE_URL.replace(/\/api\/v1$/, '');
 export const ORG_ID = process.env.EXPO_PUBLIC_RECURSIV_ORG_ID || '';
 export const PROJECT_ID = process.env.EXPO_PUBLIC_RECURSIV_PROJECT_ID || '';
 

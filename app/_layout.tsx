@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '../lib/auth';
+import { ToastProvider } from '../components/Toast';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,8 +29,10 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
         <AuthProvider>
-          <StatusBar style="light" />
-          <Slot />
+          <ToastProvider>
+            <StatusBar style="light" />
+            <Slot />
+          </ToastProvider>
         </AuthProvider>
       </View>
     </SafeAreaProvider>
