@@ -10,7 +10,7 @@ const KEYS = {
   version: 'brain:auth_version',
 };
 
-const AUTH_VERSION = '2'; // bumped: OTP auth
+const AUTH_VERSION = '3'; // bumped: added projects scope
 
 const API_KEY_SCOPES = [
   'posts:read', 'posts:write',
@@ -23,6 +23,7 @@ const API_KEY_SCOPES = [
   'storage:read', 'storage:write',
   'settings:read', 'settings:write',
   'billing:read', 'billing:write',
+  'projects:read', 'projects:write',
 ] as const;
 
 export interface User {
