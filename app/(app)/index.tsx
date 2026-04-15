@@ -99,7 +99,7 @@ export default function HomeScreen() {
           What do you need?
         </Text>
         <Text variant="body" color={colors.textSecondary} align="center" style={{ marginBottom: spacing['3xl'] }}>
-          Ask anything. Brain will answer it, research it, draft it, or do it.
+          Ask anything. Get insights. Take action.
         </Text>
 
         {/* Prompt input */}
