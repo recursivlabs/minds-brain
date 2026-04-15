@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, ScrollView, Pressable, Platform, Linking, ActivityIndicator, TextInput } from 'react-native';
+import { View, ScrollView, Pressable, Platform, Linking, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
 import { ORG_ID, PROJECT_ID } from '../../lib/recursiv';
@@ -183,6 +183,9 @@ export default function SettingsScreen() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchResults, setSearchResults] = React.useState<any[] | null>(null);
   const [searching, setSearching] = React.useState(false);
+  const [apiKeyModal, setApiKeyModal] = React.useState<{ provider: string; name: string; fields: any[] } | null>(null);
+  const [apiKeyValue, setApiKeyValue] = React.useState('');
+  const [apiKeySubmitting, setApiKeySubmitting] = React.useState(false);
 
   // ── Knowledge base state ──
   const [files, setFiles] = React.useState<any[]>([]);
@@ -235,6 +238,22 @@ export default function SettingsScreen() {
     if (!sdk) return;
     setConnecting(provider);
     try {
+      // Check auth type first
+      const authInfo = await sdk.integrations.getAuthInfo(provider);
+      const schemes = authInfo.data?.auth_schemes || [];
+      const hasOAuth = schemes.some((s: string) => s === 'OAUTH2' || s === 'OAUTH1');
+      const hasApiKey = schemes.some((s: string) => s === 'API_KEY' || s === 'BEARER_TOKEN' || s === 'BASIC');
+
+      if (!hasOAuth && hasApiKey) {
+        // Show API key input modal
+        const name = PROVIDER_META[provider]?.name || provider;
+        setApiKeyModal({ provider, name, fields: [] });
+        setApiKeyValue('');
+        setConnecting(null);
+        return;
+      }
+
+      // OAuth flow
       const currentUrl = Platform.OS === 'web'
         ? window.location.origin + '/(app)/settings'
         : 'https://minds-brain.on.recursiv.io/(app)/settings';
@@ -248,6 +267,32 @@ export default function SettingsScreen() {
       }
     } catch (err: any) { console.warn('Connect failed:', err.message); }
     finally { setConnecting(null); }
+  }
+
+  // ── Submit API key ──
+  async function handleApiKeySubmit() {
+    if (!sdk || !apiKeyModal || !apiKeyValue.trim()) return;
+    setApiKeySubmitting(true);
+    try {
+      // Call the API key endpoint directly (SDK method available after rebuild)
+      await (sdk as any).integrations.client.post('/integrations/connections/connect-apikey', {
+        provider: apiKeyModal.provider,
+        organization_id: ORG_ID,
+        credentials: { api_key: apiKeyValue.trim() },
+      });
+      // Refresh connections
+      const updated = await sdk.integrations.listConnections(ORG_ID);
+      setConnections(updated.data || []);
+      // Grant agent access
+      const newConn = (updated.data || []).find((c: any) => c.provider === apiKeyModal.provider);
+      if (newConn) await grantAgentAccess(newConn.id, apiKeyModal.provider);
+      setApiKeyModal(null);
+      setApiKeyValue('');
+    } catch (err: any) {
+      console.warn('API key connect failed:', err.message);
+    } finally {
+      setApiKeySubmitting(false);
+    }
   }
 
   async function handleDisconnect(provider: string) {
@@ -360,6 +405,7 @@ export default function SettingsScreen() {
       }));
 
   return (
+    <>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ padding: spacing.xl, maxWidth: 680, width: '100%', alignSelf: 'center' }}
@@ -531,5 +577,55 @@ export default function SettingsScreen() {
         </Card>
       )}
     </ScrollView>
+
+      {/* API Key Modal */}
+      <Modal visible={!!apiKeyModal} transparent animationType="fade" onRequestClose={() => setApiKeyModal(null)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' }}
+          onPress={() => setApiKeyModal(null)}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation?.()}
+            style={{
+              width: '100%', maxWidth: 440,
+              backgroundColor: colors.surface, borderRadius: radius.lg,
+              borderWidth: 0.5, borderColor: colors.borderSubtle,
+              padding: spacing['2xl'],
+              ...(Platform.OS === 'web' ? { boxShadow: '0 24px 48px rgba(0,0,0,0.5)' } as any : {}),
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xl }}>
+              <Text variant="h2">Connect {apiKeyModal?.name}</Text>
+              <Pressable onPress={() => setApiKeyModal(null)} style={Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}}>
+                <MaterialCommunityIcons name="close" size={22} color={colors.textMuted} />
+              </Pressable>
+            </View>
+
+            <Text variant="body" color={colors.textSecondary} style={{ marginBottom: spacing.xl }}>
+              Enter your API key to connect {apiKeyModal?.name}. You can find this in your {apiKeyModal?.name} account settings.
+            </Text>
+
+            <TextInput
+              value={apiKeyValue}
+              onChangeText={setApiKeyValue}
+              placeholder="Paste your API key here..."
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              style={{
+                backgroundColor: colors.glass, borderWidth: 0.5, borderColor: colors.glassBorder,
+                borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11,
+                color: colors.text, ...typography.body, marginBottom: spacing.xl,
+                ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as any : {}),
+              }}
+            />
+
+            <View style={{ flexDirection: 'row', gap: spacing.md, justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onPress={() => setApiKeyModal(null)}>Cancel</Button>
+              <Button loading={apiKeySubmitting} onPress={handleApiKeySubmit}>Connect</Button>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
