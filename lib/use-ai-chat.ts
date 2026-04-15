@@ -10,6 +10,14 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+function stripCodeBlocks(text: string): string {
+  return text
+    .replace(/```(?:json|javascript|js|typescript|ts|action)?\s*\n([\s\S]*?)```/g, '')
+    .replace(/```\w*\s*/g, '')
+    .replace(/```/g, '')
+    .trim();
+}
+
 export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -17,7 +25,7 @@ export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
   const conversationIdRef = useRef<string | null>(null);
 
   const sendMessage = useCallback(
-    async (text: string): Promise<string | null> => {
+    async (text: string, options?: { newConversation?: boolean }): Promise<string | null> => {
       if (isStreaming || !sdk) return null;
 
       const userMsg: ChatMessage = {
@@ -43,25 +51,27 @@ export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
       setIsStreaming(true);
 
       try {
-        const result = await callAI(sdk, agentId, text, conversationIdRef.current || undefined);
+        const convId = options?.newConversation ? undefined : conversationIdRef.current || undefined;
+        const result = await callAI(sdk, agentId, text, convId, options?.newConversation);
         if (result.conversationId) {
           conversationIdRef.current = result.conversationId;
           setConversationId(result.conversationId);
         }
 
-        let cleanText = result.content
-          .replace(/```(?:json|javascript|js|typescript|ts|action)?\s*\n([\s\S]*?)```/g, '')
-          .replace(/```\w*\s*/g, '')
-          .replace(/```/g, '')
-          .trim();
+        const cleanText = stripCodeBlocks(result.content);
 
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? { ...m, isStreaming: false, content: cleanText }
-              : m
-          )
-        );
+        if (!cleanText) {
+          // Tool-only response with no visible text — remove the empty bubble
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        } else {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, isStreaming: false, content: cleanText }
+                : m
+            )
+          );
+        }
 
         return result.conversationId || null;
       } catch (err: any) {
@@ -96,9 +106,10 @@ export function useAiChat(sdk: Recursiv | null, agentId: string | null) {
           .map((m: any) => ({
             id: m.id,
             role: m.sender?.is_ai ? 'assistant' as const : 'user' as const,
-            content: m.content || '',
+            content: stripCodeBlocks(m.content || ''),
             timestamp: new Date(m.created_at),
-          }));
+          }))
+          .filter((m: ChatMessage) => m.content.length > 0);
         setMessages(loaded);
         setConversationId(convId);
         conversationIdRef.current = convId;

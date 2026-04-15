@@ -38,8 +38,8 @@ You know everything about this business: finances, revenue, users, product metri
 - You proactively flag things that need attention
 - You're the advisor who tells the founder what they need to hear, not what they want to hear`;
 
-export async function ensureBrainAgent(sdk: Recursiv): Promise<string> {
-  if (_agentId) return _agentId;
+export async function ensureBrainAgent(sdk: Recursiv, forceRefresh?: boolean): Promise<string> {
+  if (_agentId && !forceRefresh) return _agentId;
 
   try {
     const existing = await sdk.agents.list({ limit: 50 });
@@ -47,10 +47,13 @@ export async function ensureBrainAgent(sdk: Recursiv): Promise<string> {
       a.username === 'minds_brain' || a.name === 'Minds Brain'
     );
     if (found) {
+      console.log('[agent] Found existing Brain agent:', found.id, found.username);
       _agentId = found.id;
       return found.id;
     }
-  } catch {}
+  } catch (err) {
+    console.warn('[agent] Failed to list agents:', err);
+  }
 
   const agent = await sdk.agents.create({
     name: 'Minds Brain',

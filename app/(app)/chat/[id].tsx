@@ -58,6 +58,11 @@ const MessageBubble = React.memo(function MessageBubble({ message }: { message: 
   const isUser = message.role === 'user';
   const isTyping = message.isStreaming && !message.content;
 
+  // Skip empty messages (tool calls with no visible content)
+  if (!isUser && !isTyping && (!message.content || !message.content.trim())) {
+    return null;
+  }
+
   if (isUser) {
     return (
       <View style={{
@@ -121,21 +126,31 @@ const MessageBubble = React.memo(function MessageBubble({ message }: { message: 
 // ─── Chat Screen ─────────────────────────────────────────────
 
 export default function ChatScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, message: initialMessage } = useLocalSearchParams<{ id: string; message?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { sdk } = useAuth();
   const { agentId, refreshConversations } = useBrain();
 
-  // Each chat screen has its OWN chat state — not shared with home or other chats
-  const { messages, isStreaming, sendMessage, loadConversation } = useAiChat(sdk, agentId);
+  const { messages, isStreaming, conversationId, sendMessage, loadConversation } = useAiChat(sdk, agentId);
 
   const [input, setInput] = React.useState('');
   const flatListRef = React.useRef<FlatList>(null);
+  const sentInitial = React.useRef(false);
 
-  // Load this conversation's messages on mount
+  // Handle new conversation from home screen OR load existing conversation
   React.useEffect(() => {
-    if (id) {
+    if (id === 'new' && initialMessage && !sentInitial.current) {
+      sentInitial.current = true;
+      const decoded = decodeURIComponent(initialMessage);
+      sendMessage(decoded, { newConversation: true }).then((convId) => {
+        if (convId) {
+          invalidate(`conversations:${agentId}`);
+          refreshConversations();
+          router.replace(`/(app)/chat/${convId}`);
+        }
+      });
+    } else if (id && id !== 'new') {
       loadConversation(id);
     }
   }, [id]);
@@ -197,11 +212,6 @@ export default function ChatScreen() {
           maxWidth: 720, width: '100%', alignSelf: 'center',
         }}
         renderItem={({ item }) => <MessageBubble message={item} />}
-        ListEmptyComponent={
-          <View style={{ alignItems: 'center', paddingTop: spacing['6xl'] }}>
-            <Text variant="body" color={colors.textMuted}>Loading conversation...</Text>
-          </View>
-        }
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
