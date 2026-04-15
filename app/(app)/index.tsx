@@ -83,6 +83,7 @@ export default function HomeScreen() {
       }}
     >
       <View style={{ alignItems: 'center', maxWidth: 680, width: '100%' }}>
+        <MaterialCommunityIcons name="brain" size={36} color={colors.accent} style={{ marginBottom: spacing.lg }} />
         <Text variant="h2" color={colors.accent} align="center" style={{ letterSpacing: 3, fontWeight: '300', marginBottom: spacing['3xl'] }}>
           minds brain
         </Text>
