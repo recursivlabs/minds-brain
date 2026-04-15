@@ -3,6 +3,7 @@ import { View, ScrollView, RefreshControl, ActivityIndicator, Pressable, Platfor
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../lib/auth';
+import { ORG_ID } from '../../lib/recursiv';
 import { Text, Card, Avatar } from '../../components';
 import { colors, spacing, radius } from '../../constants/theme';
 
@@ -49,7 +50,9 @@ export default function AgentsScreen() {
     if (!sdk) return;
     try {
       const res = await sdk.agents.list({ limit: 50 });
-      setAgents(res.data || []);
+      // Filter to agents belonging to this org
+      const orgAgents = (res.data || []).filter((a: any) => a.organization_id === ORG_ID);
+      setAgents(orgAgents);
     } catch (err) {
       console.warn('Failed to load agents:', err);
     } finally {

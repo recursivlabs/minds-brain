@@ -45,10 +45,9 @@ export function Sidebar({ conversations, userName, onNewChat, onSignOut }: Props
     }}>
       {/* Header */}
       <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing['2xl'] }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <MaterialCommunityIcons name="brain" size={22} color={colors.accent} />
-          <Text variant="h3">Brain</Text>
-        </View>
+        <Text style={{ color: colors.accent, fontSize: 18, letterSpacing: 3, fontWeight: '300', fontFamily: 'Geist-Regular' }}>
+          minds brain
+        </Text>
       </View>
 
       {/* New chat button */}

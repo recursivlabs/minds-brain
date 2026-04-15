@@ -145,8 +145,8 @@ export default function AppLayout() {
                 <MaterialCommunityIcons name="menu" size={24} color={colors.text} />
               </Pressable>
               <View style={{ flex: 1, alignItems: 'center' }}>
-                <Text variant="h2" color={colors.accent} style={{ letterSpacing: 4, fontWeight: '300', fontSize: 16 }}>
-                  minds
+                <Text variant="h2" color={colors.accent} style={{ letterSpacing: 3, fontWeight: '300', fontSize: 16 }}>
+                  minds brain
                 </Text>
               </View>
               <Pressable

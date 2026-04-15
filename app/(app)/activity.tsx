@@ -2,6 +2,7 @@ import * as React from 'react';
 import { View, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth';
+import { ORG_ID } from '../../lib/recursiv';
 import { useBrain } from './_layout';
 import { Text, Card, Avatar } from '../../components';
 import { colors, spacing, radius } from '../../constants/theme';
@@ -55,8 +56,8 @@ export default function ActivityScreen() {
   const loadActivity = React.useCallback(async () => {
     if (!sdk) return;
     try {
-      // Load posts from the org as activity
-      const res = await sdk.posts.list({ limit: 50 });
+      // Load posts scoped to this org
+      const res = await sdk.posts.list({ limit: 50, organization_id: ORG_ID });
       setActivity(res.data || []);
     } catch (err) {
       console.warn('Failed to load activity:', err);

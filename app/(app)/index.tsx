@@ -83,8 +83,8 @@ export default function HomeScreen() {
       }}
     >
       <View style={{ alignItems: 'center', maxWidth: 680, width: '100%' }}>
-        <Text variant="h2" color={colors.accent} align="center" style={{ letterSpacing: 4, fontWeight: '300', marginBottom: spacing['3xl'] }}>
-          minds
+        <Text variant="h2" color={colors.accent} align="center" style={{ letterSpacing: 3, fontWeight: '300', marginBottom: spacing['3xl'] }}>
+          minds brain
         </Text>
 
         {/* Prompt input */}

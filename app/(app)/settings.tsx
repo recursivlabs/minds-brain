@@ -184,7 +184,7 @@ function TeamTab({ sdk }: { sdk: any }) {
 
   React.useEffect(() => {
     if (!sdk) return;
-    sdk.organizations.listMembers(ORG_ID)
+    sdk.organizations.members(ORG_ID)
       .then((res: any) => setMembers(res.data || []))
       .catch((err: any) => console.warn('Failed to load members:', err))
       .finally(() => setLoading(false));
@@ -196,11 +196,11 @@ function TeamTab({ sdk }: { sdk: any }) {
     setInviteError('');
     setInviteSuccess('');
     try {
-      await sdk.organizations.invite({ organization_id: ORG_ID, email: inviteEmail.trim() });
+      await sdk.organizations.invite(ORG_ID, { email: inviteEmail.trim() });
       setInviteSuccess(`Invited ${inviteEmail.trim()}`);
       setInviteEmail('');
       // Refresh members
-      const res = await sdk.organizations.listMembers(ORG_ID);
+      const res = await sdk.organizations.members(ORG_ID);
       setMembers(res.data || []);
     } catch (err: any) {
       setInviteError(err.message || 'Failed to invite');
