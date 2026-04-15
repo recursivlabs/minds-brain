@@ -83,14 +83,8 @@ export default function HomeScreen() {
       }}
     >
       <View style={{ alignItems: 'center', maxWidth: 680, width: '100%' }}>
-        <Text variant="h2" color={colors.accent} align="center" style={{ letterSpacing: 4, fontWeight: '300', marginBottom: spacing.xl }}>
+        <Text variant="h2" color={colors.accent} align="center" style={{ letterSpacing: 4, fontWeight: '300', marginBottom: spacing['3xl'] }}>
           minds
-        </Text>
-        <Text variant="h1" align="center" style={{ marginBottom: spacing.sm }}>
-          What do you need?
-        </Text>
-        <Text variant="body" color={colors.textSecondary} align="center" style={{ marginBottom: spacing['3xl'] }}>
-          Ask anything. Get insights. Take action.
         </Text>
 
         {/* Prompt input */}
