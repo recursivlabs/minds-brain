@@ -69,8 +69,11 @@ export function Sidebar({ conversations, userName, onNewChat, onSignOut }: Props
 
       {/* Nav items */}
       <View style={{ paddingHorizontal: spacing.md, gap: spacing.xs, marginBottom: spacing['2xl'] }}>
-        <NavItem icon="home-outline" label="Home" active={pathname === '/(app)'  || pathname === '/'} onPress={() => router.push('/(app)')} />
+        <NavItem icon="home-outline" label="Home" active={pathname === '/(app)' || pathname === '/'} onPress={() => router.push('/(app)')} />
         <NavItem icon="view-dashboard-outline" label="Dashboard" active={pathname.includes('dashboard')} onPress={() => router.push('/(app)/dashboard')} />
+        <NavItem icon="pulse" label="Activity" active={pathname.includes('activity')} onPress={() => router.push('/(app)/activity')} />
+        <NavItem icon="robot-outline" label="Agents" active={pathname.includes('agents')} onPress={() => router.push('/(app)/agents')} />
+        <NavItem icon="brain" label="Memory" active={pathname.includes('memory')} onPress={() => router.push('/(app)/memory')} />
         <NavItem icon="cog-outline" label="Settings" active={pathname.includes('settings')} onPress={() => router.push('/(app)/settings')} />
       </View>
 

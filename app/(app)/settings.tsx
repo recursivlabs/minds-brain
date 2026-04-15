@@ -9,7 +9,7 @@ import { Text, Card, Button, Input } from '../../components';
 import { colors, spacing, radius, typography } from '../../constants/theme';
 
 type GrantStatus = 'idle' | 'pending' | 'granted' | 'failed';
-type SettingsTab = 'integrations' | 'knowledge' | 'account';
+type SettingsTab = 'integrations' | 'knowledge' | 'team' | 'account';
 
 const BUCKET_NAME = 'knowledge-base';
 
@@ -47,7 +47,8 @@ const PROVIDER_META: Record<string, { name: string; icon: string; category: stri
 function TabBar({ active, onChange }: { active: SettingsTab; onChange: (t: SettingsTab) => void }) {
   const tabs: { key: SettingsTab; label: string; icon: string }[] = [
     { key: 'integrations', label: 'Integrations', icon: 'power-plug-outline' },
-    { key: 'knowledge', label: 'Knowledge Base', icon: 'file-document-outline' },
+    { key: 'knowledge', label: 'Knowledge', icon: 'file-document-outline' },
+    { key: 'team', label: 'Team', icon: 'account-group-outline' },
     { key: 'account', label: 'Account', icon: 'account-outline' },
   ];
   return (
@@ -168,6 +169,126 @@ function FileRow({ file, onDelete, onDownload }: {
         <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.textMuted} />
       </Pressable>
     </Pressable>
+  );
+}
+
+// ── Team tab component ──────────────────────────────────────────
+
+function TeamTab({ sdk }: { sdk: any }) {
+  const [members, setMembers] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [inviteEmail, setInviteEmail] = React.useState('');
+  const [inviting, setInviting] = React.useState(false);
+  const [inviteError, setInviteError] = React.useState('');
+  const [inviteSuccess, setInviteSuccess] = React.useState('');
+
+  React.useEffect(() => {
+    if (!sdk) return;
+    sdk.organizations.listMembers(ORG_ID)
+      .then((res: any) => setMembers(res.data || []))
+      .catch((err: any) => console.warn('Failed to load members:', err))
+      .finally(() => setLoading(false));
+  }, [sdk]);
+
+  async function handleInvite() {
+    if (!sdk || !inviteEmail.trim() || !inviteEmail.includes('@')) return;
+    setInviting(true);
+    setInviteError('');
+    setInviteSuccess('');
+    try {
+      await sdk.organizations.invite({ organization_id: ORG_ID, email: inviteEmail.trim() });
+      setInviteSuccess(`Invited ${inviteEmail.trim()}`);
+      setInviteEmail('');
+      // Refresh members
+      const res = await sdk.organizations.listMembers(ORG_ID);
+      setMembers(res.data || []);
+    } catch (err: any) {
+      setInviteError(err.message || 'Failed to invite');
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  const roleBadgeColor: Record<string, string> = {
+    owner: colors.accent,
+    admin: colors.info,
+    member: colors.textMuted,
+  };
+
+  return (
+    <>
+      <Text variant="body" color={colors.textSecondary} style={{ marginBottom: spacing.xl }}>
+        Manage who has access to this Brain instance.
+      </Text>
+
+      {/* Invite */}
+      <Card variant="default" padding="xl" style={{ marginBottom: spacing['2xl'] }}>
+        <Text variant="bodyMedium" style={{ marginBottom: spacing.md }}>Invite a team member</Text>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <TextInput
+            value={inviteEmail}
+            onChangeText={(t) => { setInviteEmail(t); setInviteError(''); setInviteSuccess(''); }}
+            placeholder="email@example.com"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={{
+              flex: 1, backgroundColor: colors.glass, borderWidth: 0.5, borderColor: colors.glassBorder,
+              borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 10,
+              color: colors.text, ...typography.body,
+              ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as any : {}),
+            }}
+          />
+          <Button size="sm" loading={inviting} onPress={handleInvite}>Invite</Button>
+        </View>
+        {inviteError ? <Text variant="caption" color={colors.error} style={{ marginTop: spacing.sm }}>{inviteError}</Text> : null}
+        {inviteSuccess ? <Text variant="caption" color={colors.success} style={{ marginTop: spacing.sm }}>{inviteSuccess}</Text> : null}
+      </Card>
+
+      {/* Members list */}
+      <Text variant="label" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>
+        MEMBERS ({members.length})
+      </Text>
+      <Card variant="default" padding="xs" style={{ marginBottom: spacing['2xl'] }}>
+        {loading ? (
+          <View style={{ padding: spacing.xl, alignItems: 'center' }}>
+            <ActivityIndicator color={colors.accent} />
+          </View>
+        ) : members.length === 0 ? (
+          <View style={{ padding: spacing.xl, alignItems: 'center' }}>
+            <Text variant="body" color={colors.textMuted}>No members yet</Text>
+          </View>
+        ) : (
+          members.map((m: any) => (
+            <View key={m.id} style={{
+              flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+              paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+              borderBottomWidth: 0.5, borderBottomColor: colors.borderSubtle,
+            }}>
+              <View style={{
+                width: 32, height: 32, borderRadius: radius.full,
+                backgroundColor: colors.glass, alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text variant="bodyMedium" color={colors.textSecondary} style={{ fontSize: 13 }}>
+                  {(m.name || m.username || '?')[0].toUpperCase()}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text variant="body">{m.name || m.username || 'Unknown'}</Text>
+              </View>
+              <View style={{
+                paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.full,
+                backgroundColor: (roleBadgeColor[m.role] || colors.textMuted) + '18',
+              }}>
+                <Text variant="caption" color={roleBadgeColor[m.role] || colors.textMuted} style={{ fontSize: 11 }}>
+                  {m.role}
+                </Text>
+              </View>
+            </View>
+          ))
+        )}
+      </Card>
+    </>
   );
 }
 
@@ -591,6 +712,11 @@ export default function SettingsScreen() {
             )}
           </Card>
         </>
+      )}
+
+      {/* ── Team Tab ── */}
+      {tab === 'team' && (
+        <TeamTab sdk={sdk} />
       )}
 
       {/* ── Account Tab ── */}
