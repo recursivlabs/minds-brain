@@ -373,6 +373,11 @@ export default function SettingsScreen() {
         try {
           const fieldsRes = await sdk.integrations.getAuthConfigFields(provider, authScheme as any);
           fields = [...(fieldsRes.data?.required || []), ...(fieldsRes.data?.optional || [])];
+          // Composio sometimes requires "API Key" during initiation but doesn't list it in config fields
+          const hasApiKeyField = fields.some((f: any) => f.name.toLowerCase().includes('api') || f.name.toLowerCase().includes('key'));
+          if (!hasApiKeyField) {
+            fields.push({ name: 'API Key', display_name: 'API Key', description: 'Your API key from account settings', type: 'string', required: true });
+          }
         } catch {
           // Fallback: generic API key field
           fields = [{ name: 'api_key', display_name: 'API Key', description: 'Your API key', type: 'string', required: true }];
