@@ -292,6 +292,73 @@ function TeamTab({ sdk }: { sdk: any }) {
   );
 }
 
+// ── BYOK Key Input ──────────────────────────────────────────────
+
+function ByokKeyInput({ label, description, field, placeholder, sdk, secure = true }: {
+  label: string; description: string; field: string; placeholder: string;
+  sdk: any; secure?: boolean;
+}) {
+  const [value, setValue] = React.useState('');
+  const [saved, setSaved] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  async function handleSave() {
+    if (!sdk || !value.trim()) return;
+    setSaving(true);
+    setError('');
+    try {
+      const storedKey = await storage.getItem('rbrain:api_key') || await storage.getItem('brain:api_key');
+      const res = await fetch(`${BASE_URL}/organization-settings/${ORG_ID}/byok`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(storedKey ? { 'Authorization': `Bearer ${storedKey}` } : {}),
+        },
+        body: JSON.stringify({ [field]: value.trim() }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `Failed (${res.status})`);
+      }
+      setSaved(true);
+      setValue('');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <View style={{ marginBottom: spacing.lg, borderBottomWidth: 0.5, borderBottomColor: colors.borderSubtle, paddingBottom: spacing.lg }}>
+      <Text variant="bodyMedium" style={{ marginBottom: spacing.xs }}>{label}</Text>
+      <Text variant="caption" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>{description}</Text>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <TextInput
+          value={value}
+          onChangeText={(t) => { setValue(t); setSaved(false); setError(''); }}
+          placeholder={saved ? '••••••• saved' : placeholder}
+          placeholderTextColor={saved ? colors.success : colors.textMuted}
+          secureTextEntry={secure}
+          style={{
+            flex: 1, backgroundColor: colors.glass, borderWidth: 0.5,
+            borderColor: saved ? colors.success + '40' : colors.glassBorder,
+            borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 9,
+            color: colors.text, ...typography.body,
+            ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as any : {}),
+          }}
+        />
+        <Button size="sm" loading={saving} onPress={handleSave} disabled={!value.trim()}>
+          {saved ? 'Saved' : 'Save'}
+        </Button>
+      </View>
+      {error ? <Text variant="caption" color={colors.error} style={{ marginTop: spacing.xs }}>{error}</Text> : null}
+      {saved ? <Text variant="caption" color={colors.success} style={{ marginTop: spacing.xs }}>Key saved and encrypted</Text> : null}
+    </View>
+  );
+}
+
 // ── Main settings screen ────────────────────────────────────────
 
 export default function SettingsScreen() {
@@ -655,6 +722,46 @@ export default function SettingsScreen() {
               Search above to browse 200+ available integrations
             </Text>
           )}
+
+          {/* Direct API Keys (BYOK) */}
+          <Text variant="label" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>
+            API KEYS (DIRECT)
+          </Text>
+          <Text variant="caption" color={colors.textMuted} style={{ marginBottom: spacing.md }}>
+            Connect services directly with API keys. No OAuth required.
+          </Text>
+          <Card variant="default" padding="xl" style={{ marginBottom: spacing['2xl'] }}>
+            <ByokKeyInput
+              label="Stripe Secret Key"
+              description="Read-only key from Stripe Dashboard → Developers → API keys"
+              field="stripe_secret_key"
+              placeholder="sk_live_... or sk_test_..."
+              sdk={sdk}
+            />
+            <ByokKeyInput
+              label="PostHog API Key"
+              description="Personal API key from PostHog → Settings → Personal API Keys"
+              field="posthog_api_key"
+              placeholder="phx_..."
+              sdk={sdk}
+            />
+            <ByokKeyInput
+              label="PostHog Host"
+              description="Your PostHog instance URL (default: https://us.posthog.com)"
+              field="posthog_host"
+              placeholder="https://us.posthog.com"
+              sdk={sdk}
+              secure={false}
+            />
+            <ByokKeyInput
+              label="PostHog Project ID"
+              description="Your PostHog project ID (find in Settings → Project)"
+              field="posthog_project_id"
+              placeholder="12345"
+              sdk={sdk}
+              secure={false}
+            />
+          </Card>
         </>
       )}
 
