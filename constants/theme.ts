@@ -1,35 +1,35 @@
 /**
  * Minds Brain Design Tokens
- * Dark theme with cyan/blue accent — intelligence, clarity, precision.
+ * Dark theme with Minds gold accent — matching minds.on.recursiv.io
  */
 
 export const colors = {
-  // Backgrounds
-  bg: '#0a0a0c',
-  surface: '#141416',
-  surfaceRaised: '#1a1a1e',
+  // Backgrounds — Linear-style dark (matching Minds)
+  bg: '#0f0f0f',
+  surface: '#181818',
+  surfaceRaised: '#1e1e1e',
   surfaceHover: 'rgba(255,255,255,0.06)',
 
-  // Glass
+  // Glass effect
   glass: 'rgba(255,255,255,0.04)',
   glassBorder: 'rgba(255,255,255,0.08)',
 
   // Borders
   border: 'rgba(255,255,255,0.12)',
   borderSubtle: 'rgba(255,255,255,0.08)',
-  borderFocus: '#5eead4',
+  borderFocus: '#d4a844',
 
   // Text
   text: 'rgba(240,240,240, 0.95)',
-  textSecondary: 'rgba(240,240,240, 0.65)',
-  textMuted: 'rgba(240,240,240, 0.38)',
-  textInverse: '#0a0a0c',
+  textSecondary: 'rgba(240,240,240, 0.72)',
+  textMuted: 'rgba(240,240,240, 0.42)',
+  textInverse: '#0f0f0f',
 
-  // Accent — teal/cyan (intelligence, clarity)
-  accent: '#5eead4',
-  accentHover: '#7df3e0',
-  accentMuted: 'rgba(94, 234, 212, 0.12)',
-  accentSubtle: 'rgba(94, 234, 212, 0.06)',
+  // Accent — Minds gold
+  accent: '#d4a844',
+  accentHover: '#e6bc54',
+  accentMuted: 'rgba(212, 168, 68, 0.12)',
+  accentSubtle: 'rgba(212, 168, 68, 0.06)',
 
   // Semantic
   success: '#34d399',
