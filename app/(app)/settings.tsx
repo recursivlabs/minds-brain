@@ -372,7 +372,7 @@ export default function SettingsScreen() {
         let fields: any[] = [];
         try {
           const fieldsRes = await sdk.integrations.getAuthConfigFields(provider, authScheme as any);
-          fields = fieldsRes.data?.required || [];
+          fields = [...(fieldsRes.data?.required || []), ...(fieldsRes.data?.optional || [])];
         } catch {
           // Fallback: generic API key field
           fields = [{ name: 'api_key', display_name: 'API Key', description: 'Your API key', type: 'string', required: true }];
