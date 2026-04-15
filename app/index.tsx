@@ -89,9 +89,11 @@ export default function LandingScreen() {
       </View>
 
       <View style={{ alignItems: 'center', zIndex: 2, paddingHorizontal: spacing['3xl'] }}>
-        <MaterialCommunityIcons name="brain" size={48} color={colors.accent} style={{ marginBottom: spacing.xl }} />
+        <Text variant="h2" color={colors.accent} align="center" style={{ letterSpacing: 4, fontWeight: '300', marginBottom: spacing.xl }}>
+          minds
+        </Text>
         <Text variant="hero" align="center" style={{ marginBottom: spacing.md }}>
-          Minds Brain
+          Brain
         </Text>
         <Text variant="body" color={colors.textSecondary} align="center" style={{ marginBottom: spacing['4xl'], maxWidth: 360 }}>
           Your business intelligence, always on.
